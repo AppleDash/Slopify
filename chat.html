@@ -258,6 +258,10 @@
         function wsConnect() {
             ws = new WebSocket('ws://localhost:8080');
 
+            ws.addEventListener('open', () => {
+                loadOrSetUsername();
+            });
+
             ws.addEventListener('message', ({ data }) => {
                 data = JSON.parse(data.toString());
                 console.log('recv', data);
@@ -298,6 +302,23 @@
             });
         }
 
+        /** Load the username from LocalStorage and send it to the server.
+         *  If no username is saved, first prompt the user for a new username.
+         */
+        function loadOrSetUsername() {
+            window.userName = localStorage['userName'] || null;
+
+            if (!window.userName) {
+                setUserName();
+            } else {
+                // Announce existing username
+                ws.send(JSON.stringify({
+                    type: 'nick',
+                    nick: window.userName
+                }));
+            }
+        }
+
         // Track usernames in the current room
         window.usernames = new Set();
         window.mutedUsernames = new Set();
@@ -313,7 +334,9 @@
 
         async function createOrJoinRoom() {
             let room = prompt("Enter the name of the room you want to join or create, leave it blank to randomize:");
-            ws.close();
+            if (ws) {
+                ws.close();
+            }
 
             if (room) {
                 window.roomId = room;
@@ -539,20 +562,9 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            window.userName = localStorage['userName'] || null;
-
             // Initialize connections
             emojis = await fetch('https://api.github.com/emojis').then(response => response.json()).catch(() => ({}));
 
-            if (!window.userName) {
-                setUserName();
-            } else {
-                // Announce existing username
-                ws.send(JSON.stringify({
-                    type: 'nick',
-                    nick: window.userName
-                }));
-            }
 
             document.addEventListener("keydown", function (event) {
                 if (event.key === "Enter") {
@@ -572,6 +584,7 @@
             }
 
             toggleImages(window.chatState);
+            wsConnect();
         });
 
         function flashGreen() {
@@ -598,5 +611,4 @@
         });
     </script>
 </body>
-
 </html>
