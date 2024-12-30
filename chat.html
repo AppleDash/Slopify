@@ -260,6 +260,7 @@
 
             ws.addEventListener('open', () => {
                 loadOrSetUsername();
+                joinRoom('global');
             });
 
             ws.addEventListener('message', ({ data }) => {
@@ -319,6 +320,13 @@
             }
         }
 
+        function joinRoom(room) {
+            ws.send(JSON.stringify({
+                type: 'room',
+                room: 'global'
+            }));
+        }
+
         // Track usernames in the current room
         window.usernames = new Set();
         window.mutedUsernames = new Set();
@@ -334,16 +342,11 @@
 
         async function createOrJoinRoom() {
             let room = prompt("Enter the name of the room you want to join or create, leave it blank to randomize:");
-            if (ws) {
-                ws.close();
-            }
 
             if (room) {
                 window.roomId = room;
             } else {
-                // TODO???
-                window.chatConnection = getTunnelConnection('');
-                room = window.chatConnection.tunnelId;
+                window.roomId = ""; // TODO: Generate random room ID
             }
 
             // Initialize username tracking for new room
@@ -351,10 +354,9 @@
 
             document.getElementById('roomInfo').textContent = `Connected to room: ${room}`;
             localMessage('System:', `${window.userName} connected to room ${room}. ---`, true);
-            
             ws.send(JSON.stringify({
-                type: 'nick',
-                nick: window.userName
+                type: 'room',
+                room: window.roomId
             }));
 
             localMessage(localStorage['userName'], 'i connected', false, false)
