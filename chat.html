@@ -254,13 +254,13 @@
     </div>
     <script>
         let ws;
+        let chatRegistered = false;
 
         function wsConnect() {
             ws = new WebSocket('ws://localhost:8080');
 
             ws.addEventListener('open', () => {
                 loadOrSetUsername();
-                joinRoom('global');
             });
 
             ws.addEventListener('message', ({ data }) => {
@@ -276,6 +276,12 @@
                     }
 
                     window.usernames.add(nick);
+
+                    // Only join the room once we're sure our nick is good.
+                    if (nick === window.userName && !chatRegistered) {
+                        joinRoom('global');
+                        chatRegistered = true;
+                    }
                 } else if (type === 'chat') {
                     const { nick, body, is_bot } = data;
                     localMessage(nick, body, is_bot, false);
@@ -287,6 +293,9 @@
                             break;
                         case 'nick_too_long':
                             alert("That nickname is too short or too long, please try another!");
+                            break;
+                        case 'nick_reserved':
+                            alert("That nickname is reserved, please try another!");
                             break;
                     }
                 }
